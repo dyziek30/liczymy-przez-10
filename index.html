@@ -211,6 +211,8 @@
   <ul class="ideas" id="ideasList"></ul>
 </section>
 
+<script src="stories.js"></script>
+<script src="words.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 const rnd = (a,b) => a + Math.floor(Math.random()*(b-a+1));
@@ -387,28 +389,6 @@ modeButtons('abcModes',m=>{ abcMode=m; abcNew(); });
 abcNew();
 
 /* ---------- CZYTANIE ---------- */
-const STORIES = [
-  {t:'Ola ma małego psa. Pies nazywa się Burek. Burek lubi biegać po parku i przynosić patyki. Wieczorem śpi na kocu przy kaloryferze.',
-   q:[['Jak nazywa się pies?','Burek','Azor','Reksio'],['Gdzie Burek lubi biegać?','w parku','w lesie','na plaży'],['Gdzie śpi wieczorem?','na kocu przy kaloryferze','w budzie','na łóżku Oli']]},
-  {t:'Tomek poszedł z tatą do sklepu. Kupili chleb, mleko i sześć jabłek. W drodze do domu zaczął padać deszcz, więc otworzyli parasol.',
-   q:[['Z kim Tomek poszedł do sklepu?','z tatą','z mamą','z babcią'],['Ile jabłek kupili?','sześć','dwa','dziesięć'],['Co się stało w drodze do domu?','zaczął padać deszcz','spadł śnieg','zgubili klucze']]},
-  {t:'Zosia zasadziła w doniczce nasionko fasoli. Codziennie je podlewała. Po tygodniu z ziemi wyrósł mały zielony listek. Zosia była bardzo dumna.',
-   q:[['Co zasadziła Zosia?','fasolę','różę','marchewkę'],['Co robiła codziennie?','podlewała nasionko','śpiewała mu','przestawiała doniczkę'],['Kiedy wyrósł listek?','po tygodniu','po roku','następnego dnia']]},
-  {t:'Jeż Kolczatek szukał jedzenia w ogrodzie. Znalazł jabłko, ale było za duże, żeby je unieść. Wtedy przyszła wiewiórka i pomogła mu potoczyć je do norki.',
-   q:[['Kim był Kolczatek?','jeżem','kotem','myszką'],['Co znalazł w ogrodzie?','jabłko','gruszkę','orzech'],['Kto mu pomógł?','wiewiórka','sowa','zając']]},
-  {t:'W sobotę klasa 2b pojechała na wycieczkę do zoo. Dzieci widziały żyrafy, lwy i małpy. Najbardziej podobały im się pingwiny, które skakały do wody.',
-   q:[['Kiedy była wycieczka?','w sobotę','w poniedziałek','w niedzielę'],['Dokąd pojechała klasa?','do zoo','do kina','do muzeum'],['Co najbardziej podobało się dzieciom?','pingwiny','lwy','żyrafy']]},
-  {t:'Kasia robiła doświadczenie. Wsypała sól do ciepłej wody i długo mieszała. Potem włożyła do słoika sznurek i postawiła go na parapecie. Po kilku dniach na sznurku pojawiły się kryształki.',
-   q:[['Co Kasia wsypała do wody?','sól','cukier','piasek'],['Gdzie postawiła słoik?','na parapecie','w lodówce','pod łóżkiem'],['Co pojawiło się na sznurku?','kryształki','lód','kwiatki']]},
-  {t:'Bartek trenuje piłkę nożną. W sobotnim meczu strzelił dwa gole. Po meczu podał rękę zawodnikom z drugiej drużyny, bo ważna jest zasada fair play.',
-   q:[['Jaki sport trenuje Bartek?','piłkę nożną','pływanie','tenis'],['Ile goli strzelił?','dwa','jeden','pięć'],['Co zrobił po meczu?','podał rękę rywalom','poszedł spać','obraził się']]},
-  {t:'Zimą babcia Ela karmi ptaki. Wiesza na drzewie słoninę i sypie ziarno do karmnika. Najczęściej przylatują do niej sikorki i wróble.',
-   q:[['Kiedy babcia karmi ptaki?','zimą','latem','wiosną'],['Gdzie sypie ziarno?','do karmnika','na stół','do miski psa'],['Jakie ptaki przylatują najczęściej?','sikorki i wróble','bociany','sowy']]},
-  {t:'Kot Mruczek wspiął się na wysokie drzewo. Bał się zejść i głośno miauczał. Sąsiad przyniósł drabinę i ostrożnie zdjął kotka. Mruczek dostał potem miskę mleka.',
-   q:[['Gdzie wspiął się Mruczek?','na drzewo','na dach','na szafę'],['Kto pomógł kotu?','sąsiad','strażak','mama'],['Co dostał potem Mruczek?','miskę mleka','rybkę','zabawkę']]},
-  {t:'Ania i Kuba budowali zamek z piasku. Kuba nosił wodę w wiaderku, a Ania robiła wieże. Nagle przyszła duża fala i zabrała połowę zamku. Dzieci się zaśmiały i zaczęły budować od nowa.',
-   q:[['Co budowały dzieci?','zamek z piasku','dom z klocków','szałas'],['Co robił Kuba?','nosił wodę','robił wieże','pływał'],['Co zrobiły dzieci po fali?','zaczęły budować od nowa','poszły do domu','płakały']]},
-];
 let readPts=0, readOrder=shuffle(STORIES.map((_,i)=>i)), readIdx=0;
 function readNew(){
   if(readIdx>=readOrder.length){ readOrder=shuffle(readOrder); readIdx=0; }
@@ -435,8 +415,6 @@ $('readNext').onclick=()=>{ readNew(); window.scrollTo(0,0); };
 readNew();
 
 /* ---------- SZYBKIE WYRAZY ---------- */
-const SHORT = Object.values(WORDS).flat().filter(w=>w.length<=5);
-const LONG = ['samochód','czekolada','telewizor','biedronka','parasolka','kanapka','hulajnoga','truskawka','dinozaur','księżniczka','pomarańcza','komputer','motylek','marchewka','wiewiórka','szkoła','koleżanka','lokomotywa','słoneczko','kolorowanka','nauczycielka','huśtawka','zjeżdżalnia','czapeczka','rękawiczki'];
 let flashMode='short', flashPts=0, flashMs=2000, flashCur='', flashT;
 function flashShow(){
   clearTimeout(flashT);
