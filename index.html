@@ -3,65 +3,251 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Liczymy przez 10</title>
+<title>Emi uczy się</title>
 <style>
-  :root{--bg:#fff8e7;--card:#fff;--ink:#2b2d42;--accent:#ff7b00;--ok:#2ec4b6;--bad:#e63946;--box:#ffe8c2}
+  :root{--bg:#fff8e7;--card:#fff;--ink:#2b2d42;--accent:#ff7b00;--ok:#2ec4b6;--bad:#e63946;--box:#ffe8c2;--blue:#4361ee}
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);font-family:"Comic Sans MS","Trebuchet MS",system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;min-height:100vh;padding:16px}
   h1{margin:8px 0 4px;font-size:clamp(24px,6vw,40px);text-align:center}
+  h2{margin:4px 0 8px;font-size:clamp(22px,5vw,32px);text-align:center}
+  .view{display:none;width:100%;max-width:640px;flex-direction:column;align-items:center}
+  .view.on{display:flex}
+  .back{align-self:flex-start;font:inherit;font-size:18px;padding:8px 14px;border-radius:12px;border:none;background:#ddd;cursor:pointer;margin-bottom:6px}
+  .menu{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;width:100%;margin-top:12px}
+  .tile{font:inherit;border:none;border-radius:22px;padding:22px 12px;color:#fff;cursor:pointer;box-shadow:0 6px 0 #0002;text-align:center}
+  .tile b{display:block;font-size:44px;margin-bottom:6px}
+  .tile span{font-size:20px}
+  .tile:active{transform:translateY(4px);box-shadow:none}
   .modes{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:8px 0}
   .modes button{font:inherit;font-size:18px;padding:10px 16px;border-radius:14px;border:3px solid var(--accent);background:#fff;color:var(--ink);cursor:pointer}
   .modes button.on{background:var(--accent);color:#fff}
   .score{font-size:22px;margin:6px 0}
-  .card{background:var(--card);border-radius:24px;box-shadow:0 6px 0 #0001;padding:20px;width:100%;max-width:640px;text-align:center}
+  .card{background:var(--card);border-radius:24px;box-shadow:0 6px 0 #0001;padding:20px;width:100%;text-align:center}
   .line{font-size:clamp(28px,8vw,52px);font-weight:bold;margin:12px 0;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:8px}
   .slot{min-width:1.6em;height:1.4em;border-radius:12px;background:var(--box);border:3px dashed var(--accent);display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
   .slot.active{border-style:solid;box-shadow:0 0 0 4px #ff7b0044}
   .slot.ok{background:#c9f5ef;border-color:var(--ok);border-style:solid}
-  .slot.bad{background:#ffd6d9;border-color:var(--bad);animation:shake .3s}
+  .slot.bad,.bad{background:#ffd6d9 !important;border-color:var(--bad) !important;animation:shake .3s}
   @keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
   .hint{font-size:20px;min-height:1.5em;margin:6px 0;color:#555}
   .dots{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin:8px auto;max-width:360px}
   .dot{width:22px;height:22px;border-radius:50%}
   .pad{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;max-width:420px;margin:12px auto 0}
-  .pad button{font:inherit;font-size:28px;padding:12px 0;border-radius:14px;border:none;background:#4361ee;color:#fff;cursor:pointer;box-shadow:0 4px 0 #2a3fb0}
+  .pad button{font:inherit;font-size:28px;padding:12px 0;border-radius:14px;border:none;background:var(--blue);color:#fff;cursor:pointer;box-shadow:0 4px 0 #2a3fb0}
   .pad button:active{transform:translateY(3px);box-shadow:none}
   .pad .del{background:#999;box-shadow:0 4px 0 #666}
   .pad .go{background:var(--ok);box-shadow:0 4px 0 #1a8a80}
-  .next{display:none;font:inherit;font-size:24px;margin-top:14px;padding:12px 28px;border:none;border-radius:16px;background:var(--ok);color:#fff;cursor:pointer}
+  .big{font:inherit;font-size:24px;margin-top:14px;padding:12px 28px;border:none;border-radius:16px;background:var(--ok);color:#fff;cursor:pointer}
+  .big.alt{background:var(--bad)}
+  .big.gray{background:#999}
+  .next{display:none}
   .stars{font-size:28px;min-height:1.2em}
+  /* alfabet */
+  .words{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;min-height:70px;margin:10px 0}
+  .word{font:inherit;font-size:28px;padding:10px 18px;border-radius:14px;border:3px solid var(--blue);background:#fff;cursor:pointer}
+  .word.placed{background:#c9f5ef;border-color:var(--ok);cursor:default}
+  .answer{border:3px dashed #ccc;border-radius:16px;padding:8px}
+  .word mark{background:#ffd166;border-radius:4px}
+  /* czytanie */
+  .text{font-size:24px;line-height:1.7;text-align:left;margin:6px 0 14px}
+  .q{font-size:22px;margin:14px 0 6px;text-align:left;font-weight:bold}
+  .opts{display:flex;flex-direction:column;gap:8px}
+  .opt{font:inherit;font-size:20px;padding:10px;border-radius:12px;border:3px solid var(--blue);background:#fff;cursor:pointer;text-align:left}
+  .opt.good{background:#c9f5ef;border-color:var(--ok)}
+  /* szybkie wyrazy */
+  .flash{font-size:clamp(48px,14vw,90px);font-weight:bold;min-height:1.6em;display:flex;align-items:center;justify-content:center;letter-spacing:2px}
+  /* wiersz */
+  textarea,input[type=text]{font:inherit;font-size:18px;width:100%;padding:10px;border-radius:12px;border:2px solid #ccc;margin:4px 0}
+  textarea{min-height:180px}
+  .poem{font-size:24px;line-height:1.8;text-align:left;margin:10px 0}
+  .hid{background:#ffe8c2;color:transparent;border-radius:6px;cursor:pointer;padding:0 2px}
+  .hid.show{color:var(--ink)}
+  .meter{height:34px;background:#eee;border-radius:17px;overflow:hidden;position:relative;margin:10px 0}
+  .meter i{display:block;height:100%;width:0;background:var(--bad);transition:width .08s}
+  .meter s{position:absolute;top:0;bottom:0;width:4px;background:var(--ink);left:45%}
+  .levels{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+  .levels button{font:inherit;font-size:16px;padding:8px 12px;border-radius:12px;border:2px solid var(--accent);background:#fff;cursor:pointer}
+  .levels button.on{background:var(--accent);color:#fff}
+  /* pomysły */
+  .ideas{list-style:none;padding:0;margin:0;text-align:left}
+  .ideas li{background:#fff;border-radius:14px;padding:12px 14px;margin:8px 0;box-shadow:0 3px 0 #0001;display:flex;gap:12px;align-items:flex-start;font-size:18px}
+  .ideas input{width:26px;height:26px;flex:none;margin-top:2px}
+  .ideas li.done{opacity:.55}
+  .tag{display:inline-block;font-size:13px;color:#fff;border-radius:8px;padding:1px 8px;margin-right:6px;vertical-align:middle}
 </style>
 </head>
 <body>
-<h1>🧮 Liczymy przez 10</h1>
-<div class="modes">
-  <button data-m="add" class="on">➕ Dodawanie</button>
-  <button data-m="sub">➖ Odejmowanie</button>
-  <button data-m="mix">🔀 Mieszane</button>
-</div>
-<div class="score">⭐ <span id="pts">0</span> &nbsp; 🔥 seria: <span id="streak">0</span></div>
-<div class="card">
-  <div class="line" id="task"></div>
-  <div class="line" id="steps"></div>
-  <div class="dots" id="dots"></div>
-  <div class="hint" id="hint"></div>
-  <div class="pad" id="pad"></div>
-  <button class="next" id="next">Dalej ▶</button>
-</div>
-<div class="stars" id="stars"></div>
+
+<!-- MENU -->
+<section class="view on" id="v-menu">
+  <h1>🌟 Emi uczy się</h1>
+  <div class="hint">Wybierz, w co chcesz zagrać:</div>
+  <div class="menu">
+    <button class="tile" style="background:#ff7b00" data-go="math"><b>🧮</b><span>Matma<br>przez 10</span></button>
+    <button class="tile" style="background:#4361ee" data-go="abc"><b>🔤</b><span>Ułóż<br>alfabetycznie</span></button>
+    <button class="tile" style="background:#2ec4b6" data-go="read"><b>📖</b><span>Czytam<br>i rozumiem</span></button>
+    <button class="tile" style="background:#9b5de5" data-go="flash"><b>⚡</b><span>Szybkie<br>wyrazy</span></button>
+    <button class="tile" style="background:#f15bb5" data-go="poem"><b>🎤</b><span>Trener<br>wiersza</span></button>
+    <button class="tile" style="background:#43aa8b" data-go="ideas"><b>💡</b><span>POMYSŁY<br>bez komputera</span></button>
+  </div>
+</section>
+
+<!-- MATMA -->
+<section class="view" id="v-math">
+  <button class="back" data-go="menu">← Menu</button>
+  <h2>🧮 Liczymy przez 10</h2>
+  <div class="modes" id="mathModes">
+    <button data-m="add" class="on">➕ Dodawanie</button>
+    <button data-m="sub">➖ Odejmowanie</button>
+    <button data-m="mix">🔀 Mieszane</button>
+  </div>
+  <div class="score">⭐ <span id="pts">0</span> &nbsp; 🔥 seria: <span id="streak">0</span></div>
+  <div class="card">
+    <div class="line" id="task"></div>
+    <div class="line" id="steps"></div>
+    <div class="dots" id="dots"></div>
+    <div class="hint" id="hint"></div>
+    <div class="pad" id="pad"></div>
+    <button class="big next" id="next">Dalej ▶</button>
+  </div>
+  <div class="stars" id="stars"></div>
+</section>
+
+<!-- ALFABET -->
+<section class="view" id="v-abc">
+  <button class="back" data-go="menu">← Menu</button>
+  <h2>🔤 Ułóż alfabetycznie</h2>
+  <div class="modes" id="abcModes">
+    <button data-m="easy" class="on">🙂 Łatwe</button>
+    <button data-m="hard">💪 Trudne (ta sama litera)</button>
+  </div>
+  <div class="score">⭐ <span id="abcPts">0</span></div>
+  <div class="card">
+    <div class="hint">Klikaj wyrazy po kolei – od A do Ż</div>
+    <div class="words answer" id="abcAnswer"></div>
+    <div class="words" id="abcPool"></div>
+    <div class="hint" id="abcHint"></div>
+    <div style="font-size:15px;color:#888">a ą b c ć d e ę f g h i j k l ł m n ń o ó p r s ś t u w y z ź ż</div>
+    <button class="big next" id="abcNext">Dalej ▶</button>
+  </div>
+</section>
+
+<!-- CZYTANIE -->
+<section class="view" id="v-read">
+  <button class="back" data-go="menu">← Menu</button>
+  <h2>📖 Czytam i rozumiem</h2>
+  <div class="score">⭐ <span id="readPts">0</span></div>
+  <div class="card">
+    <div class="hint">Przeczytaj na głos, a potem odpowiedz na pytania.</div>
+    <div class="text" id="readText"></div>
+    <div id="readQs"></div>
+    <div class="hint" id="readHint"></div>
+    <button class="big next" id="readNext">Następne opowiadanie ▶</button>
+  </div>
+</section>
+
+<!-- SZYBKIE WYRAZY -->
+<section class="view" id="v-flash">
+  <button class="back" data-go="menu">← Menu</button>
+  <h2>⚡ Szybkie wyrazy</h2>
+  <div class="modes" id="flashModes">
+    <button data-m="short" class="on">Krótkie</button>
+    <button data-m="long">Długie</button>
+  </div>
+  <div class="score">⭐ <span id="flashPts">0</span> &nbsp; ⏱️ <span id="flashMs">2.0</span> s</div>
+  <div class="card">
+    <div class="hint">Wyraz pokaże się na chwilę. Przeczytaj go głośno w całości – bez sylabizowania!</div>
+    <div class="flash" id="flashWord">👀</div>
+    <button class="big" id="flashGo">Pokaż wyraz ▶</button>
+    <div id="flashJudge" style="display:none">
+      <div class="hint">Rodzic: czy przeczytała dobrze?</div>
+      <button class="big" id="flashYes">✔ Dobrze</button>
+      <button class="big alt" id="flashNo">✖ Jeszcze raz</button>
+      <button class="big gray" id="flashAgain">👀 Pokaż jeszcze raz</button>
+    </div>
+  </div>
+</section>
+
+<!-- WIERSZ -->
+<section class="view" id="v-poem">
+  <button class="back" data-go="menu">← Menu</button>
+  <h2>🎤 Trener wiersza</h2>
+  <div class="card" id="poemEdit">
+    <div class="hint">Wpisz wiersz, którego uczy się Emi:</div>
+    <input type="text" id="pTitle" placeholder="Tytuł">
+    <input type="text" id="pAuthor" placeholder="Autor">
+    <textarea id="pText" placeholder="Tekst wiersza – każdy wers w nowej linijce"></textarea>
+    <button class="big" id="poemStart">Ćwiczymy ▶</button>
+  </div>
+  <div class="card" id="poemPlay" style="display:none">
+    <div class="hint">Zacznij jak prezenter: najpierw <b>tytuł</b> i <b>autor</b>!</div>
+    <div class="poem" style="text-align:center">
+      <div>Tytuł: <span class="hid" id="pT"></span></div>
+      <div>Autor: <span class="hid" id="pA"></span></div>
+    </div>
+    <div class="levels" id="poemLevels">
+      <button data-l="0" class="on">Cały tekst</button>
+      <button data-l="1">Co 3. słowo ukryte</button>
+      <button data-l="2">Co 2. słowo ukryte</button>
+      <button data-l="3">Tylko 1. słowo wersu</button>
+      <button data-l="4">Na pamięć</button>
+    </div>
+    <div class="poem" id="poemBody"></div>
+    <div class="hint">Kliknij zasłonięte słowo, żeby podejrzeć.</div>
+    <hr>
+    <div class="hint">🔊 Miernik głośności – mów tak, żeby pasek przeszedł za kreskę!</div>
+    <div class="meter"><i id="meterBar"></i><s></s></div>
+    <div class="score">🔊 Głośno przez: <span id="loudSec">0</span> s</div>
+    <button class="big" id="micBtn">🎙️ Włącz mikrofon</button>
+    <button class="big gray" id="poemEditBtn">✏️ Zmień wiersz</button>
+  </div>
+</section>
+
+<!-- POMYSŁY -->
+<section class="view" id="v-ideas">
+  <button class="back" data-go="menu">← Menu</button>
+  <h2>💡 POMYSŁY – nauka bez komputera</h2>
+  <div class="hint">Zaznacz, co już robicie 👍</div>
+  <ul class="ideas" id="ideasList"></ul>
+</section>
 
 <script>
 const $ = id => document.getElementById(id);
-let mode = 'add', pts = 0, streak = 0, task, slots, cur, input = '';
 const rnd = (a,b) => a + Math.floor(Math.random()*(b-a+1));
+const shuffle = a => { a=[...a]; for(let i=a.length-1;i>0;i--){const j=rnd(0,i);[a[i],a[j]]=[a[j],a[i]];} return a; };
+const store = {
+  get(k,d){ try{ const v=localStorage.getItem('emi_'+k); return v==null?d:JSON.parse(v);}catch(e){return d;} },
+  set(k,v){ try{ localStorage.setItem('emi_'+k,JSON.stringify(v)); }catch(e){} }
+};
+const praise=['Brawo! 🎉','Super! 🌟','Świetnie! 👏','Ekstra! 🚀','Mistrzyni! 🏆'];
+const pick = a => a[rnd(0,a.length-1)];
+
+/* ---------- nawigacja ---------- */
+let view='menu';
+function go(v){
+  view=v;
+  document.querySelectorAll('.view').forEach(s=>s.classList.toggle('on',s.id==='v-'+v));
+  if(v!=='poem') stopMic();
+  window.scrollTo(0,0);
+}
+document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>go(b.dataset.go));
+function modeButtons(id,cb){
+  document.querySelectorAll('#'+id+' button').forEach(b=>b.onclick=()=>{
+    document.querySelectorAll('#'+id+' button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on'); cb(b.dataset.m);
+  });
+}
+
+/* ---------- MATMA ---------- */
+let mode = 'add', pts = 0, streak = 0, task, slots, cur, input = '';
 
 function makeTask(){
   const kind = mode==='mix' ? (Math.random()<.5?'add':'sub') : mode;
   if(kind==='add'){
     let a,b; do{ a=rnd(2,9); b=rnd(2,9);}while(a+b<=10);
     const x=10-a, y=b-x;
+    // a + b = a + x + y = 10 + y = wynik
     return {kind,a,b,
-      // a + b = a + x + y = 10 + y = wynik
       parts:[a,' + ',{v:x,h:`Ile brakuje do 10? ${a} + ? = 10`},' + ',{v:y,h:`Rozłóż ${b}: ${b} = ${x} + ?`},' = 10 + ',{v:y,h:`Ile zostało do dodania?`},' = ',{v:a+b,h:`10 + ${y} = ?`}]};
   } else {
     let n,m; do{ n=rnd(11,18); m=rnd(2,9);}while(m<=n-10 || n-m>=10);
@@ -78,7 +264,7 @@ function render(){
   const s = $('steps'); s.innerHTML=''; slots=[];
   task.parts.forEach(p=>{
     if(typeof p==='object'){
-      const el=document.createElement('span'); el.className='slot'; el.textContent='';
+      const el=document.createElement('span'); el.className='slot';
       el.onclick=()=>{ if(!el.classList.contains('ok')) setCur(slots.findIndex(q=>q.el===el)); };
       slots.push({el,...p}); s.appendChild(el);
     } else s.appendChild(document.createTextNode(p));
@@ -88,10 +274,13 @@ function render(){
 
 function drawDots(){
   const d=$('dots'); d.innerHTML='';
-  if(task.kind==='add'){
-    for(let i=0;i<task.a+task.b;i++){const e=document.createElement('div');e.className='dot';e.style.background=i<task.a?'#ff7b00':(i<10?'#4361ee':'#2ec4b6');d.appendChild(e); if(i===9){const br=document.createElement('div');br.style.width='100%';d.appendChild(br);}}
-  } else {
-    for(let i=0;i<task.a;i++){const e=document.createElement('div');e.className='dot';const crossed=i>=task.a-task.b;e.style.background=crossed?'#ddd':'#ff7b00';if(crossed)e.style.border='2px solid #e63946';d.appendChild(e); if(i===9){const br=document.createElement('div');br.style.width='100%';d.appendChild(br);}}
+  const total = task.kind==='add' ? task.a+task.b : task.a;
+  for(let i=0;i<total;i++){
+    const e=document.createElement('div'); e.className='dot';
+    if(task.kind==='add') e.style.background=i<task.a?'#ff7b00':(i<10?'#4361ee':'#2ec4b6');
+    else { const crossed=i>=task.a-task.b; e.style.background=crossed?'#ddd':'#ff7b00'; if(crossed)e.style.border='2px solid #e63946'; }
+    d.appendChild(e);
+    if(i===9){const br=document.createElement('div');br.style.width='100%';d.appendChild(br);}
   }
 }
 
@@ -124,8 +313,7 @@ function check(){
 
 function win(){
   pts++; streak++; $('pts').textContent=pts; $('streak').textContent=streak;
-  const praise=['Brawo! 🎉','Super! 🌟','Świetnie! 👏','Ekstra! 🚀','Mistrz! 🏆'];
-  $('hint').textContent=praise[rnd(0,praise.length-1)];
+  $('hint').textContent=pick(praise);
   $('stars').textContent='⭐'.repeat(Math.min(streak,10));
   $('pad').style.display='none'; $('next').style.display='inline-block';
 }
@@ -135,19 +323,233 @@ function newTask(){ task=makeTask(); render(); }
 const pad=$('pad');
 ['1','2','3','4','5','6','7','8','9','0'].forEach(n=>{const b=document.createElement('button');b.textContent=n;b.onclick=()=>key(n);pad.appendChild(b);});
 const del=document.createElement('button');del.textContent='⌫';del.className='del';del.style.gridColumn='span 2';del.onclick=()=>key('del');pad.appendChild(del);
-const go=document.createElement('button');go.textContent='✔';go.className='go';go.style.gridColumn='span 3';go.onclick=()=>key('go');pad.appendChild(go);
+const goBtn=document.createElement('button');goBtn.textContent='✔';goBtn.className='go';goBtn.style.gridColumn='span 3';goBtn.onclick=()=>key('go');pad.appendChild(goBtn);
 
 document.addEventListener('keydown',e=>{
+  if(view!=='math') return;
   if(/^[0-9]$/.test(e.key)) key(e.key);
   else if(e.key==='Backspace') key('del');
   else if(e.key==='Enter'){ if($('next').style.display!=='none') newTask(); else key('go'); }
 });
 $('next').onclick=newTask;
-document.querySelectorAll('.modes button').forEach(b=>b.onclick=()=>{
-  document.querySelectorAll('.modes button').forEach(x=>x.classList.remove('on'));
-  b.classList.add('on'); mode=b.dataset.m; newTask();
-});
+modeButtons('mathModes',m=>{ mode=m; newTask(); });
 newTask();
+
+/* ---------- ALFABET ---------- */
+const WORDS = {
+  a:['arbuz','auto','agrest','aparat'], b:['balon','banan','bocian','buty','babcia','burak'],
+  c:['cebula','cukier','cytryna','cegła'], d:['dom','dziadek','drzewo','deszcz','dynia','delfin'],
+  e:['ekran','echo'], f:['foka','farba','film'], g:['góra','gruszka','grzyb','gitara'],
+  h:['herbata','hamak'], i:['igła','indyk'], j:['jabłko','jeż','jajko','jezioro'],
+  k:['kot','koc','kura','koza','klocki','kwiat','kredka'], l:['lis','lody','lampa','las','lalka'],
+  ł:['łódka','łyżka','łąka'], m:['mama','miś','mleko','motyl','mysz','morze'], n:['nos','noga','nożyczki'],
+  o:['okno','osa','owca','ogórek'], p:['pies','piłka','pomidor','ptak','pająk','park'],
+  r:['rower','ryba','rak','ręka'], s:['sok','słoń','sowa','ser','sanki'], ś:['ślimak','śnieg'],
+  t:['tata','tort','tygrys','trawa'], u:['ul','ucho'], w:['woda','wilk','wiatr','wąż'],
+  z:['zebra','zamek','zupa','zając'], ż:['żaba','żółw','żyrafa']
+};
+const plCmp = (a,b) => a.localeCompare(b,'pl');
+let abcMode='easy', abcPts=0, abcSorted=[], abcStep=0;
+
+function abcNew(){
+  let list;
+  if(abcMode==='easy'){
+    list = shuffle(Object.keys(WORDS)).slice(0,4).map(l=>pick(WORDS[l]));
+  } else {
+    const big = Object.keys(WORDS).filter(l=>WORDS[l].length>=4);
+    list = shuffle(WORDS[pick(big)]).slice(0,4);
+  }
+  abcSorted = [...list].sort(plCmp); abcStep=0;
+  $('abcAnswer').innerHTML=''; $('abcHint').textContent=''; $('abcNext').style.display='none';
+  const pool=$('abcPool'); pool.innerHTML='';
+  shuffle(list).forEach(w=>{
+    const b=document.createElement('button'); b.className='word'; b.textContent=w;
+    b.onclick=()=>abcClick(b,w); pool.appendChild(b);
+  });
+}
+// pierwsza litera, na której wyrazy się różnią
+function diffIndex(a,b){ let i=0; while(i<a.length && a[i]===b[i]) i++; return i; }
+function markWord(w,i){ return w.slice(0,i)+'<mark>'+(w[i]||'')+'</mark>'+w.slice(i+1); }
+function abcClick(b,w){
+  const want=abcSorted[abcStep];
+  if(w===want){
+    b.remove(); const p=document.createElement('span'); p.className='word placed'; p.textContent=w;
+    $('abcAnswer').appendChild(p); abcStep++; $('abcHint').textContent='';
+    if(abcStep===abcSorted.length){ abcPts++; $('abcPts').textContent=abcPts; $('abcHint').textContent=pick(praise); $('abcNext').style.display='inline-block'; }
+  } else {
+    const i=diffIndex(w,want);
+    b.classList.add('bad'); setTimeout(()=>b.classList.remove('bad'),400);
+    $('abcHint').innerHTML=`Porównaj litery: <b>${markWord(want,i)}</b> i <b>${markWord(w,i)}</b> – która jest wcześniej w alfabecie?`;
+  }
+}
+$('abcNext').onclick=abcNew;
+modeButtons('abcModes',m=>{ abcMode=m; abcNew(); });
+abcNew();
+
+/* ---------- CZYTANIE ---------- */
+const STORIES = [
+  {t:'Ola ma małego psa. Pies nazywa się Burek. Burek lubi biegać po parku i przynosić patyki. Wieczorem śpi na kocu przy kaloryferze.',
+   q:[['Jak nazywa się pies?','Burek','Azor','Reksio'],['Gdzie Burek lubi biegać?','w parku','w lesie','na plaży'],['Gdzie śpi wieczorem?','na kocu przy kaloryferze','w budzie','na łóżku Oli']]},
+  {t:'Tomek poszedł z tatą do sklepu. Kupili chleb, mleko i sześć jabłek. W drodze do domu zaczął padać deszcz, więc otworzyli parasol.',
+   q:[['Z kim Tomek poszedł do sklepu?','z tatą','z mamą','z babcią'],['Ile jabłek kupili?','sześć','dwa','dziesięć'],['Co się stało w drodze do domu?','zaczął padać deszcz','spadł śnieg','zgubili klucze']]},
+  {t:'Zosia zasadziła w doniczce nasionko fasoli. Codziennie je podlewała. Po tygodniu z ziemi wyrósł mały zielony listek. Zosia była bardzo dumna.',
+   q:[['Co zasadziła Zosia?','fasolę','różę','marchewkę'],['Co robiła codziennie?','podlewała nasionko','śpiewała mu','przestawiała doniczkę'],['Kiedy wyrósł listek?','po tygodniu','po roku','następnego dnia']]},
+  {t:'Jeż Kolczatek szukał jedzenia w ogrodzie. Znalazł jabłko, ale było za duże, żeby je unieść. Wtedy przyszła wiewiórka i pomogła mu potoczyć je do norki.',
+   q:[['Kim był Kolczatek?','jeżem','kotem','myszką'],['Co znalazł w ogrodzie?','jabłko','gruszkę','orzech'],['Kto mu pomógł?','wiewiórka','sowa','zając']]},
+  {t:'W sobotę klasa 2b pojechała na wycieczkę do zoo. Dzieci widziały żyrafy, lwy i małpy. Najbardziej podobały im się pingwiny, które skakały do wody.',
+   q:[['Kiedy była wycieczka?','w sobotę','w poniedziałek','w niedzielę'],['Dokąd pojechała klasa?','do zoo','do kina','do muzeum'],['Co najbardziej podobało się dzieciom?','pingwiny','lwy','żyrafy']]},
+  {t:'Kasia robiła doświadczenie. Wsypała sól do ciepłej wody i długo mieszała. Potem włożyła do słoika sznurek i postawiła go na parapecie. Po kilku dniach na sznurku pojawiły się kryształki.',
+   q:[['Co Kasia wsypała do wody?','sól','cukier','piasek'],['Gdzie postawiła słoik?','na parapecie','w lodówce','pod łóżkiem'],['Co pojawiło się na sznurku?','kryształki','lód','kwiatki']]},
+  {t:'Bartek trenuje piłkę nożną. W sobotnim meczu strzelił dwa gole. Po meczu podał rękę zawodnikom z drugiej drużyny, bo ważna jest zasada fair play.',
+   q:[['Jaki sport trenuje Bartek?','piłkę nożną','pływanie','tenis'],['Ile goli strzelił?','dwa','jeden','pięć'],['Co zrobił po meczu?','podał rękę rywalom','poszedł spać','obraził się']]},
+  {t:'Zimą babcia Ela karmi ptaki. Wiesza na drzewie słoninę i sypie ziarno do karmnika. Najczęściej przylatują do niej sikorki i wróble.',
+   q:[['Kiedy babcia karmi ptaki?','zimą','latem','wiosną'],['Gdzie sypie ziarno?','do karmnika','na stół','do miski psa'],['Jakie ptaki przylatują najczęściej?','sikorki i wróble','bociany','sowy']]},
+  {t:'Kot Mruczek wspiął się na wysokie drzewo. Bał się zejść i głośno miauczał. Sąsiad przyniósł drabinę i ostrożnie zdjął kotka. Mruczek dostał potem miskę mleka.',
+   q:[['Gdzie wspiął się Mruczek?','na drzewo','na dach','na szafę'],['Kto pomógł kotu?','sąsiad','strażak','mama'],['Co dostał potem Mruczek?','miskę mleka','rybkę','zabawkę']]},
+  {t:'Ania i Kuba budowali zamek z piasku. Kuba nosił wodę w wiaderku, a Ania robiła wieże. Nagle przyszła duża fala i zabrała połowę zamku. Dzieci się zaśmiały i zaczęły budować od nowa.',
+   q:[['Co budowały dzieci?','zamek z piasku','dom z klocków','szałas'],['Co robił Kuba?','nosił wodę','robił wieże','pływał'],['Co zrobiły dzieci po fali?','zaczęły budować od nowa','poszły do domu','płakały']]},
+];
+let readPts=0, readOrder=shuffle(STORIES.map((_,i)=>i)), readIdx=0;
+function readNew(){
+  if(readIdx>=readOrder.length){ readOrder=shuffle(readOrder); readIdx=0; }
+  const s=STORIES[readOrder[readIdx++]];
+  $('readText').textContent=s.t; $('readHint').textContent=''; $('readNext').style.display='none';
+  const box=$('readQs'); box.innerHTML=''; let left=s.q.length;
+  s.q.forEach(([q,good,...bad])=>{
+    const d=document.createElement('div'); d.innerHTML=`<div class="q">❓ ${q}</div>`;
+    const o=document.createElement('div'); o.className='opts'; let done=false;
+    shuffle([good,...bad]).forEach(a=>{
+      const b=document.createElement('button'); b.className='opt'; b.textContent=a;
+      b.onclick=()=>{
+        if(done) return;
+        if(a===good){ done=true; b.classList.add('good'); left--;
+          if(!left){ readPts++; $('readPts').textContent=readPts; $('readHint').textContent=pick(praise); $('readNext').style.display='inline-block'; } }
+        else { b.classList.add('bad'); $('readHint').textContent='Spójrz jeszcze raz do tekstu 🔍'; }
+      };
+      o.appendChild(b);
+    });
+    d.appendChild(o); box.appendChild(d);
+  });
+}
+$('readNext').onclick=()=>{ readNew(); window.scrollTo(0,0); };
+readNew();
+
+/* ---------- SZYBKIE WYRAZY ---------- */
+const SHORT = Object.values(WORDS).flat().filter(w=>w.length<=5);
+const LONG = ['samochód','czekolada','telewizor','biedronka','parasolka','kanapka','hulajnoga','truskawka','dinozaur','księżniczka','pomarańcza','komputer','motylek','marchewka','wiewiórka','szkoła','koleżanka','lokomotywa','słoneczko','kolorowanka','nauczycielka','huśtawka','zjeżdżalnia','czapeczka','rękawiczki'];
+let flashMode='short', flashPts=0, flashMs=2000, flashCur='', flashT;
+function flashShow(){
+  clearTimeout(flashT);
+  $('flashWord').textContent=flashCur; $('flashGo').style.display='none'; $('flashJudge').style.display='none';
+  flashT=setTimeout(()=>{ $('flashWord').textContent='❓'; $('flashJudge').style.display='block'; },flashMs);
+}
+function flashNew(){ let w; do{ w=pick(flashMode==='short'?SHORT:LONG);}while(w===flashCur); flashCur=w; flashShow(); }
+function flashUpd(){ $('flashMs').textContent=(flashMs/1000).toFixed(1); }
+$('flashGo').onclick=flashNew;
+$('flashAgain').onclick=flashShow;
+$('flashYes').onclick=()=>{ flashPts++; $('flashPts').textContent=flashPts; flashMs=Math.max(500,flashMs-150); flashUpd(); $('flashWord').textContent=pick(praise); $('flashJudge').style.display='none'; $('flashGo').style.display='inline-block'; };
+$('flashNo').onclick=()=>{ flashMs=Math.min(4000,flashMs+300); flashUpd(); flashShow(); };
+modeButtons('flashModes',m=>{ flashMode=m; flashMs=m==='short'?2000:3000; flashUpd(); $('flashWord').textContent='👀'; $('flashJudge').style.display='none'; $('flashGo').style.display='inline-block'; });
+
+/* ---------- WIERSZ ---------- */
+let poem = store.get('poem',{title:'',author:'',text:''}), poemLevel=0;
+$('pTitle').value=poem.title; $('pAuthor').value=poem.author; $('pText').value=poem.text;
+function reveal(el){ el.onclick=()=>el.classList.toggle('show'); }
+function poemRender(){
+  $('pT').textContent=poem.title||'—'; $('pA').textContent=poem.author||'—';
+  $('pT').classList.remove('show'); $('pA').classList.remove('show');
+  const body=$('poemBody'); body.innerHTML='';
+  poem.text.split('\n').forEach(line=>{
+    const div=document.createElement('div');
+    line.split(/(\s+)/).forEach((tok,k)=>{
+      if(!tok.trim()){ div.appendChild(document.createTextNode(tok)); return; }
+      const n=k/2; let hide=false;
+      if(poemLevel===1) hide=n%3===2;
+      else if(poemLevel===2) hide=n%2===1;
+      else if(poemLevel===3) hide=n>0;
+      else if(poemLevel===4) hide=true;
+      if(hide){ const s=document.createElement('span'); s.className='hid'; s.textContent=tok; reveal(s); div.appendChild(s); }
+      else div.appendChild(document.createTextNode(tok));
+    });
+    body.appendChild(div);
+  });
+}
+reveal($('pT')); reveal($('pA'));
+$('poemStart').onclick=()=>{
+  poem={title:$('pTitle').value.trim(),author:$('pAuthor').value.trim(),text:$('pText').value.trim()};
+  if(!poem.text){ $('pText').classList.add('bad'); setTimeout(()=>$('pText').classList.remove('bad'),400); return; }
+  store.set('poem',poem); $('poemEdit').style.display='none'; $('poemPlay').style.display='block'; poemRender();
+};
+$('poemEditBtn').onclick=()=>{ stopMic(); $('poemPlay').style.display='none'; $('poemEdit').style.display='block'; };
+document.querySelectorAll('#poemLevels button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#poemLevels button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); poemLevel=+b.dataset.l; poemRender();
+});
+if(poem.text){ $('poemEdit').style.display='none'; $('poemPlay').style.display='block'; poemRender(); }
+
+// miernik głośności
+let mic=null, raf, loud=0, lastT=0;
+async function startMic(){
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    const ctx=new (window.AudioContext||window.webkitAudioContext)();
+    const an=ctx.createAnalyser(); an.fftSize=1024;
+    ctx.createMediaStreamSource(stream).connect(an);
+    mic={stream,ctx,an,buf:new Float32Array(an.fftSize)};
+    $('micBtn').textContent='⏹️ Wyłącz mikrofon'; lastT=performance.now(); tick();
+  }catch(e){ $('micBtn').textContent='🎙️ Brak dostępu do mikrofonu'; }
+}
+function tick(){
+  if(!mic) return;
+  mic.an.getFloatTimeDomainData(mic.buf);
+  let s=0; for(const v of mic.buf) s+=v*v;
+  const lvl=Math.min(100,Math.sqrt(s/mic.buf.length)*400);
+  const bar=$('meterBar'); bar.style.width=lvl+'%'; bar.style.background=lvl>=45?'#2ec4b6':'#e63946';
+  const now=performance.now(); if(lvl>=45) loud+=(now-lastT)/1000; lastT=now;
+  $('loudSec').textContent=Math.floor(loud);
+  raf=requestAnimationFrame(tick);
+}
+function stopMic(){
+  if(!mic) return; cancelAnimationFrame(raf);
+  mic.stream.getTracks().forEach(t=>t.stop()); mic.ctx.close(); mic=null;
+  $('meterBar').style.width='0'; $('micBtn').textContent='🎙️ Włącz mikrofon';
+}
+$('micBtn').onclick=()=>mic?stopMic():startMic();
+
+/* ---------- POMYSŁY ---------- */
+const TAGS={c:['Czytanie','#2ec4b6'],w:['Wiersz','#f15bb5'],a:['Alfabet','#4361ee'],m:['Matma','#ff7b00'],n:['Nauka','#9b5de5']};
+const IDEAS=[
+  ['c','Czytanie na zmianę – jedno zdanie Ty, jedno Emi. Mniej męczy, a dziecko słyszy, jak brzmi płynne czytanie.'],
+  ['c','10 minut czytania na głos codziennie – najlepiej o stałej porze, np. przed snem. Krótko, ale codziennie.'],
+  ['c','Po każdym rozdziale jedno pytanie: Kto? Gdzie? Co się stało? Co było najśmieszniejsze?'],
+  ['c','Czytanie z zakładką lub linijką pod wersem – oko nie gubi linijki, mniej błędów.'],
+  ['c','Karteczki z nazwami na przedmiotach w domu (DRZWI, LODÓWKA, LUSTRO) – czyta je mimochodem.'],
+  ['c','Lista zakupów – Emi czyta ją w sklepie i odhacza, co już jest w koszyku.'],
+  ['c','„Czytam pluszakom” – sadzamy maskotki i Emi czyta im bajkę jak pani w szkole.'],
+  ['w','Teatrzyk: recytacja wiersza przed „widownią” (pluszaki, dziadkowie przez wideorozmowę).'],
+  ['w','Nagraj recytację telefonem i odsłuchajcie razem – niech sama oceni, czy było głośno i wyraźnie.'],
+  ['w','Recytacja „przez pokój” – rodzic stoi na drugim końcu mieszkania, musi wszystko usłyszeć.'],
+  ['w','Zawsze zaczynamy jak prezenter: „Przedstawiam wiersz pt. … autor: …”.'],
+  ['w','Wiersz na raty – codziennie 2 nowe wersy + powtórka całości od początku.'],
+  ['w','Recytacja w ruchu – krok, podskok albo klaśnięcie na każdy wers (dla sportowej Emi!).'],
+  ['a','Układanie książek na półce alfabetycznie według tytułu albo autora.'],
+  ['a','Karteczki z imionami rodziny i kolegów – ułóż alfabetycznie na czas ze stoperem.'],
+  ['a','Gra „Pakuję walizkę”: A – arbuz, B – balon, C – cebula… każdy dodaje kolejną literę.'],
+  ['a','Szukanie słów w słowniku lub encyklopedii dla dzieci – świetny trening kolejności liter.'],
+  ['m','Matma w sklepie – policz, ile zapłacimy i ile będzie reszty (przez 10: 8 zł + 5 zł = 8 + 2 + 3).'],
+  ['m','Gra karciana „Dopełnij do 10” – zwykłe karty od 1 do 9, szukamy par dających razem 10.'],
+  ['m','Liczenie podskoków, rzutów do kosza, skakanki – po 10 robimy przerwę i liczymy dalej.'],
+  ['n','Domowe doświadczenie (kryształki soli, wulkan z sody) – Emi czyta instrukcję na głos krok po kroku.'],
+  ['n','Gry planszowe z dwiema kostkami (chińczyk, węże i drabiny) – dodawanie oczek bez liczenia na palcach.'],
+];
+const done=store.get('ideas',{});
+IDEAS.forEach(([t,txt],i)=>{
+  const li=document.createElement('li'); if(done[i]) li.classList.add('done');
+  const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=!!done[i];
+  cb.onchange=()=>{ done[i]=cb.checked; li.classList.toggle('done',cb.checked); store.set('ideas',done); };
+  const sp=document.createElement('div'); sp.innerHTML=`<span class="tag" style="background:${TAGS[t][1]}">${TAGS[t][0]}</span>${i+1}. ${txt}`;
+  li.append(cb,sp); $('ideasList').appendChild(li);
+});
 </script>
 </body>
 </html>
