@@ -61,14 +61,14 @@ function makeTask(){
     let a,b; do{ a=rnd(2,9); b=rnd(2,9);}while(a+b<=10);
     const x=10-a, y=b-x;
     return {kind,a,b,
-      // a + b = a + x + y = 10 + y = wynik
-      parts:[a,' + ',{v:x,h:`Ile brakuje do 10? ${a} + ? = 10`},' + ',{v:y,h:`Rozłóż ${b}: ${b} = ${x} + ?`},' = 10 + ',{v:y,h:`Ile zostało do dodania?`},' = ',{v:a+b,h:`10 + ${y} = ?`}]};
+      // a + b = a + x + y = wynik   (np. 5 + 9 = 5 + 5 + 4 = 14)
+      parts:[a,' + ',{v:x,h:`Ile brakuje do 10? ${a} + ? = 10`},' + ',{v:y,h:`Rozłóż ${b}: ${b} = ${x} + ?`},' = ',{v:a+b,h:`${a} + ${x} = 10, 10 + ${y} = ?`}]};
   } else {
     let n,m; do{ n=rnd(11,18); m=rnd(2,9);}while(m<=n-10 || n-m>=10);
     const x=n-10, y=m-x;
-    // n - m = n - x - y = 10 - y = wynik
+    // n - m = n - x - y = 10 - y = wynik   (np. 17 - 9 = 17 - 7 - 2 = 10 - 2 = 8)
     return {kind,a:n,b:m,
-      parts:[n,' − ',{v:x,h:`Ile odjąć, żeby było 10? ${n} − ? = 10`},' − ',{v:y,h:`Rozłóż ${m}: ${m} = ${x} + ?`},' = 10 − ',{v:y,h:`Ile jeszcze trzeba odjąć?`},' = ',{v:n-m,h:`10 − ${y} = ?`}]};
+      parts:[n,' − ',{v:x,h:`Ile odjąć, żeby było 10? ${n} − ? = 10`},' − ',{v:y,h:`Rozłóż ${m}: ${m} = ${x} + ?`},' = ',{v:10,h:`${n} − ${x} = ?`},' − ',{v:y,h:`Ile jeszcze trzeba odjąć?`},' = ',{v:n-m,h:`10 − ${y} = ?`}]};
   }
 }
 
