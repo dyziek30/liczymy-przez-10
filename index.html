@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Liczymy przez 10</title>
+<style>
+  :root{--bg:#fff8e7;--card:#fff;--ink:#2b2d42;--accent:#ff7b00;--ok:#2ec4b6;--bad:#e63946;--box:#ffe8c2}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Comic Sans MS","Trebuchet MS",system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;min-height:100vh;padding:16px}
+  h1{margin:8px 0 4px;font-size:clamp(24px,6vw,40px);text-align:center}
+  .modes{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:8px 0}
+  .modes button{font:inherit;font-size:18px;padding:10px 16px;border-radius:14px;border:3px solid var(--accent);background:#fff;color:var(--ink);cursor:pointer}
+  .modes button.on{background:var(--accent);color:#fff}
+  .score{font-size:22px;margin:6px 0}
+  .card{background:var(--card);border-radius:24px;box-shadow:0 6px 0 #0001;padding:20px;width:100%;max-width:640px;text-align:center}
+  .line{font-size:clamp(28px,8vw,52px);font-weight:bold;margin:12px 0;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:8px}
+  .slot{min-width:1.6em;height:1.4em;border-radius:12px;background:var(--box);border:3px dashed var(--accent);display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+  .slot.active{border-style:solid;box-shadow:0 0 0 4px #ff7b0044}
+  .slot.ok{background:#c9f5ef;border-color:var(--ok);border-style:solid}
+  .slot.bad{background:#ffd6d9;border-color:var(--bad);animation:shake .3s}
+  @keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+  .hint{font-size:20px;min-height:1.5em;margin:6px 0;color:#555}
+  .dots{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin:8px auto;max-width:360px}
+  .dot{width:22px;height:22px;border-radius:50%}
+  .pad{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;max-width:420px;margin:12px auto 0}
+  .pad button{font:inherit;font-size:28px;padding:12px 0;border-radius:14px;border:none;background:#4361ee;color:#fff;cursor:pointer;box-shadow:0 4px 0 #2a3fb0}
+  .pad button:active{transform:translateY(3px);box-shadow:none}
+  .pad .del{background:#999;box-shadow:0 4px 0 #666}
+  .pad .go{background:var(--ok);box-shadow:0 4px 0 #1a8a80}
+  .next{display:none;font:inherit;font-size:24px;margin-top:14px;padding:12px 28px;border:none;border-radius:16px;background:var(--ok);color:#fff;cursor:pointer}
+  .stars{font-size:28px;min-height:1.2em}
+</style>
+</head>
+<body>
+<h1>🧮 Liczymy przez 10</h1>
+<div class="modes">
+  <button data-m="add" class="on">➕ Dodawanie</button>
+  <button data-m="sub">➖ Odejmowanie</button>
+  <button data-m="mix">🔀 Mieszane</button>
+</div>
+<div class="score">⭐ <span id="pts">0</span> &nbsp; 🔥 seria: <span id="streak">0</span></div>
+<div class="card">
+  <div class="line" id="task"></div>
+  <div class="line" id="steps"></div>
+  <div class="dots" id="dots"></div>
+  <div class="hint" id="hint"></div>
+  <div class="pad" id="pad"></div>
+  <button class="next" id="next">Dalej ▶</button>
+</div>
+<div class="stars" id="stars"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+let mode = 'add', pts = 0, streak = 0, task, slots, cur, input = '';
+const rnd = (a,b) => a + Math.floor(Math.random()*(b-a+1));
+
+function makeTask(){
+  const kind = mode==='mix' ? (Math.random()<.5?'add':'sub') : mode;
+  if(kind==='add'){
+    let a,b; do{ a=rnd(2,9); b=rnd(2,9);}while(a+b<=10);
+    const x=10-a, y=b-x;
+    return {kind,a,b,
+      // a + b = a + x + y = 10 + y = wynik
+      parts:[a,' + ',{v:x,h:`Ile brakuje do 10? ${a} + ? = 10`},' + ',{v:y,h:`Rozłóż ${b}: ${b} = ${x} + ?`},' = 10 + ',{v:y,h:`Ile zostało do dodania?`},' = ',{v:a+b,h:`10 + ${y} = ?`}]};
+  } else {
+    let n,m; do{ n=rnd(11,18); m=rnd(2,9);}while(m<=n-10 || n-m>=10);
+    const x=n-10, y=m-x;
+    // n - m = n - x - y = 10 - y = wynik
+    return {kind,a:n,b:m,
+      parts:[n,' − ',{v:x,h:`Ile odjąć, żeby było 10? ${n} − ? = 10`},' − ',{v:y,h:`Rozłóż ${m}: ${m} = ${x} + ?`},' = 10 − ',{v:y,h:`Ile jeszcze trzeba odjąć?`},' = ',{v:n-m,h:`10 − ${y} = ?`}]};
+  }
+}
+
+function render(){
+  const op = task.kind==='add' ? '+' : '−';
+  $('task').textContent = `${task.a} ${op} ${task.b} = ?`;
+  const s = $('steps'); s.innerHTML=''; slots=[];
+  task.parts.forEach(p=>{
+    if(typeof p==='object'){
+      const el=document.createElement('span'); el.className='slot'; el.textContent='';
+      el.onclick=()=>{ if(!el.classList.contains('ok')) setCur(slots.findIndex(q=>q.el===el)); };
+      slots.push({el,...p}); s.appendChild(el);
+    } else s.appendChild(document.createTextNode(p));
+  });
+  drawDots(); setCur(0); $('next').style.display='none'; $('pad').style.display='grid';
+}
+
+function drawDots(){
+  const d=$('dots'); d.innerHTML='';
+  if(task.kind==='add'){
+    for(let i=0;i<task.a+task.b;i++){const e=document.createElement('div');e.className='dot';e.style.background=i<task.a?'#ff7b00':(i<10?'#4361ee':'#2ec4b6');d.appendChild(e); if(i===9){const br=document.createElement('div');br.style.width='100%';d.appendChild(br);}}
+  } else {
+    for(let i=0;i<task.a;i++){const e=document.createElement('div');e.className='dot';const crossed=i>=task.a-task.b;e.style.background=crossed?'#ddd':'#ff7b00';if(crossed)e.style.border='2px solid #e63946';d.appendChild(e); if(i===9){const br=document.createElement('div');br.style.width='100%';d.appendChild(br);}}
+  }
+}
+
+function setCur(i){
+  cur=i; input='';
+  slots.forEach((q,j)=>q.el.classList.toggle('active',j===i));
+  if(slots[i]){ slots[i].el.textContent = slots[i].el.classList.contains('ok')?slots[i].v:''; $('hint').textContent='💡 '+slots[i].h; }
+}
+
+function key(k){
+  const q=slots[cur]; if(!q) return;
+  if(k==='del'){ input=input.slice(0,-1); }
+  else if(k==='go'){ check(); return; }
+  else if(input.length<2){ input+=k; }
+  q.el.classList.remove('bad'); q.el.textContent=input;
+  if(String(q.v).length===input.length) check();
+}
+
+function check(){
+  const q=slots[cur];
+  if(+input===q.v){
+    q.el.classList.add('ok'); q.el.classList.remove('active');
+    const nx=slots.findIndex(s=>!s.el.classList.contains('ok'));
+    if(nx===-1) win(); else setCur(nx);
+  } else {
+    q.el.classList.add('bad'); streak=0; $('streak').textContent=0;
+    setTimeout(()=>{ q.el.textContent=''; input=''; },400);
+  }
+}
+
+function win(){
+  pts++; streak++; $('pts').textContent=pts; $('streak').textContent=streak;
+  const praise=['Brawo! 🎉','Super! 🌟','Świetnie! 👏','Ekstra! 🚀','Mistrz! 🏆'];
+  $('hint').textContent=praise[rnd(0,praise.length-1)];
+  $('stars').textContent='⭐'.repeat(Math.min(streak,10));
+  $('pad').style.display='none'; $('next').style.display='inline-block';
+}
+
+function newTask(){ task=makeTask(); render(); }
+
+const pad=$('pad');
+['1','2','3','4','5','6','7','8','9','0'].forEach(n=>{const b=document.createElement('button');b.textContent=n;b.onclick=()=>key(n);pad.appendChild(b);});
+const del=document.createElement('button');del.textContent='⌫';del.className='del';del.style.gridColumn='span 2';del.onclick=()=>key('del');pad.appendChild(del);
+const go=document.createElement('button');go.textContent='✔';go.className='go';go.style.gridColumn='span 3';go.onclick=()=>key('go');pad.appendChild(go);
+
+document.addEventListener('keydown',e=>{
+  if(/^[0-9]$/.test(e.key)) key(e.key);
+  else if(e.key==='Backspace') key('del');
+  else if(e.key==='Enter'){ if($('next').style.display!=='none') newTask(); else key('go'); }
+});
+$('next').onclick=newTask;
+document.querySelectorAll('.modes button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.modes button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); mode=b.dataset.m; newTask();
+});
+newTask();
+</script>
+</body>
+</html>
