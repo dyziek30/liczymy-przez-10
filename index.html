@@ -96,7 +96,6 @@
     <button class="tile" style="background:#2ec4b6" data-go="read"><b>📖</b><span>Czytam<br>i rozumiem</span></button>
     <button class="tile" style="background:#9b5de5" data-go="flash"><b>⚡</b><span>Szybkie<br>wyrazy</span></button>
     <button class="tile" style="background:#f15bb5" data-go="poem"><b>🎤</b><span>Trener<br>wiersza</span></button>
-    <button class="tile" style="background:#43aa8b" data-go="hist"><b>📊</b><span>Historia<br>i statystyki</span></button>
   </div>
   <button class="adminBtn" data-go="admin">🔒 Admin</button>
 </section>
@@ -212,14 +211,6 @@
   </div>
 </section>
 
-<!-- HISTORIA -->
-<section class="view" id="v-hist">
-  <button class="back" data-go="menu">← Menu</button>
-  <h2>📊 Historia</h2>
-  <div class="hint">Każdy dzień: ile zadań zrobiła i ile razy dobrze albo z pomyłkami. Kliknij grę, żeby zobaczyć szczegóły.</div>
-  <div id="histList"></div>
-</section>
-
 <!-- ADMIN -->
 <section class="view" id="v-admin">
   <button class="back" data-go="menu">← Menu</button>
@@ -285,7 +276,6 @@ function go(v){
   view=v;
   document.querySelectorAll('.view').forEach(s=>s.classList.toggle('on',s.id==='v-'+v));
   if(v!=='poem') stopMic();
-  if(v==='hist') histRender('histList');
   if(v==='admin') adminShow();
   window.scrollTo(0,0);
 }
