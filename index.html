@@ -68,6 +68,10 @@
   .levels{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
   .levels button{font:inherit;font-size:16px;padding:8px 12px;border-radius:12px;border:2px solid var(--accent);background:#fff;cursor:pointer}
   .levels button.on{background:var(--accent);color:#fff}
+  /* admin */
+  .adminBtn{margin-top:22px;font:inherit;font-size:15px;padding:6px 14px;border-radius:10px;border:1px solid #ccc;background:transparent;color:#888;cursor:pointer}
+  .resets{display:flex;flex-direction:column;gap:4px}
+  .resets .big{margin-top:6px;font-size:18px;padding:10px}
   /* historia */
   .day{background:#fff;border-radius:18px;box-shadow:0 4px 0 #0001;padding:12px 14px;margin:10px 0;width:100%}
   .day h3{margin:0 0 8px;font-size:20px}
@@ -94,6 +98,7 @@
     <button class="tile" style="background:#f15bb5" data-go="poem"><b>🎤</b><span>Trener<br>wiersza</span></button>
     <button class="tile" style="background:#43aa8b" data-go="hist"><b>📊</b><span>Historia<br>i statystyki</span></button>
   </div>
+  <button class="adminBtn" data-go="admin">🔒 Admin</button>
 </section>
 
 <!-- MATMA -->
@@ -213,7 +218,41 @@
   <h2>📊 Historia</h2>
   <div class="hint">Każdy dzień: ile zadań zrobiła i ile razy dobrze albo z pomyłkami. Kliknij grę, żeby zobaczyć szczegóły.</div>
   <div id="histList"></div>
-  <button class="big gray" id="histClear">🗑️ Wyczyść historię</button>
+</section>
+
+<!-- ADMIN -->
+<section class="view" id="v-admin">
+  <button class="back" data-go="menu">← Menu</button>
+  <h2>🔒 Panel admina</h2>
+  <div class="card" id="adminLogin">
+    <div class="hint">Podaj hasło:</div>
+    <input type="password" id="adminPass" autocomplete="off">
+    <div class="hint" id="adminMsg"></div>
+    <button class="big" id="adminGo">Zaloguj</button>
+  </div>
+  <div id="adminPanel" style="display:none;width:100%">
+    <div class="day">
+      <h3>📈 Podsumowanie</h3>
+      <div id="adminSum"></div>
+    </div>
+    <div class="day">
+      <h3>⚠️ Najczęstsze pomyłki (cała historia)</h3>
+      <div id="adminHard"></div>
+    </div>
+    <div class="day">
+      <h3>🧹 Resetowanie</h3>
+      <div class="resets">
+        <button class="big gray" data-reset="today">Wyczyść dzisiejszą historię</button>
+        <button class="big gray" data-reset="hist">Wyczyść całą historię</button>
+        <button class="big gray" data-reset="score">Wyzeruj punkty i serię</button>
+        <button class="big alt" data-reset="all">Wyczyść wszystko</button>
+      </div>
+      <div class="hint" id="adminDone"></div>
+    </div>
+    <h3>📅 Historia dzień po dniu</h3>
+    <div id="adminHist"></div>
+    <button class="big gray" id="adminOut">Wyloguj</button>
+  </div>
 </section>
 
 <script src="stories.js"></script>
@@ -246,7 +285,8 @@ function go(v){
   view=v;
   document.querySelectorAll('.view').forEach(s=>s.classList.toggle('on',s.id==='v-'+v));
   if(v!=='poem') stopMic();
-  if(v==='hist') histRender();
+  if(v==='hist') histRender('histList');
+  if(v==='admin') adminShow();
   window.scrollTo(0,0);
 }
 document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>go(b.dataset.go));
@@ -519,8 +559,8 @@ $('micBtn').onclick=()=>mic?stopMic():startMic();
 
 /* ---------- HISTORIA: widok ---------- */
 const esc = s => String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
-function histRender(){
-  const hist=store.get('hist',{}), box=$('histList'); box.innerHTML='';
+function histRender(boxId){
+  const hist=store.get('hist',{}), box=$(boxId); box.innerHTML='';
   const days=Object.keys(hist).sort().reverse();
   if(!days.length){ box.innerHTML='<div class="hint">Jeszcze nic tu nie ma – zagraj w którąś grę! 🙂</div>'; return; }
   days.forEach(d=>{
@@ -539,7 +579,75 @@ function histRender(){
     box.insertAdjacentHTML('beforeend',html+'</div>');
   });
 }
-$('histClear').onclick=()=>{ if(confirm('Na pewno usunąć całą historię?')){ store.set('hist',{}); histRender(); } };
+/* ---------- ADMIN ---------- */
+// SHA-256 hasła – samo hasło nie jest zapisane w kodzie
+const ADMIN_HASH='ad7e11d32653743205a1560ab15b9155013fdef5ed71f4dc0162f6e6299bae39';
+async function sha256(t){
+  const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t));
+  return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+const adminOk=()=>{ try{ return sessionStorage.getItem('emi_admin')==='1'; }catch(e){ return false; } };
+function adminShow(){
+  const ok=adminOk();
+  $('adminLogin').style.display=ok?'none':'block'; $('adminPanel').style.display=ok?'block':'none';
+  $('adminPass').value=''; $('adminMsg').textContent=''; $('adminDone').textContent='';
+  if(ok) adminRender();
+}
+async function adminLogin(){
+  if(await sha256($('adminPass').value)===ADMIN_HASH){
+    try{ sessionStorage.setItem('emi_admin','1'); }catch(e){}
+    adminShow();
+  } else { $('adminMsg').textContent='❌ Złe hasło'; $('adminPass').value=''; }
+}
+$('adminGo').onclick=adminLogin;
+$('adminPass').addEventListener('keydown',e=>{ if(e.key==='Enter') adminLogin(); });
+$('adminOut').onclick=()=>{ try{ sessionStorage.removeItem('emi_admin'); }catch(e){} go('menu'); };
+
+function adminRender(){
+  const hist=store.get('hist',{}), days=Object.keys(hist).sort().reverse();
+  const pct=(ok,n)=>n?Math.round(ok*100/n)+'%':'–';
+  // podsumowanie dzienne
+  let rows='', tOk=0, tEr=0;
+  days.forEach(d=>{
+    let ok=0, er=0;
+    Object.values(hist[d]).forEach(g=>Object.values(g).forEach(([a,b])=>{ ok+=a; er+=b; }));
+    tOk+=ok; tEr+=er;
+    rows+='<tr><td>'+d+'</td><td class="n">'+(ok+er)+'</td><td class="n cOk">'+ok+'</td><td class="n cErr">'+er+'</td><td class="n">'+pct(ok,ok+er)+'</td></tr>';
+  });
+  $('adminSum').innerHTML='<div>Punkty: matma <b>'+store.get('pts',0)+'</b>, seria <b>'+store.get('streak',0)+'</b>, alfabet <b>'+store.get('abcPts',0)+'</b>, czytanie <b>'+store.get('readPts',0)+'</b>, wyrazy <b>'+store.get('flashPts',0)+'</b></div>'
+    +(days.length?'<table><tr><th>Dzień</th><th class="n">Zadań</th><th class="n">✔</th><th class="n">✖</th><th class="n">Dobrze</th></tr>'+rows
+      +'<tr><th>Razem</th><th class="n">'+(tOk+tEr)+'</th><th class="n cOk">'+tOk+'</th><th class="n cErr">'+tEr+'</th><th class="n">'+pct(tOk,tOk+tEr)+'</th></tr></table>'
+      :'<div class="hint">Brak historii.</div>');
+  // najczęstsze pomyłki
+  const all={};
+  days.forEach(d=>Object.entries(hist[d]).forEach(([g,items])=>Object.entries(items).forEach(([k,[a,b]])=>{
+    const r=all[g+'|'+k]=all[g+'|'+k]||{g,k,ok:0,er:0}; r.ok+=a; r.er+=b;
+  })));
+  const hard=Object.values(all).filter(r=>r.er).sort((a,b)=>b.er-a.er||a.ok-b.ok).slice(0,15);
+  $('adminHard').innerHTML=hard.length
+    ?'<table><tr><th>Gra</th><th>Zadanie</th><th class="n">✔</th><th class="n">✖</th></tr>'+hard.map(r=>'<tr><td>'+GAMES[r.g].split(' ')[0]+'</td><td>'+esc(r.k)+'</td><td class="n cOk">'+r.ok+'</td><td class="n cErr">'+r.er+'</td></tr>').join('')+'</table>'
+    :'<div class="hint">Brak pomyłek 🎉</div>';
+  histRender('adminHist');
+}
+
+function setScore(){
+  pts=0; streak=0; abcPts=0; readPts=0; flashPts=0;
+  ['pts','streak','abcPts','readPts','flashPts'].forEach(k=>store.set(k,0));
+  ['pts','streak','abcPts','readPts','flashPts'].forEach(k=>$(k).textContent=0);
+  $('stars').textContent='';
+}
+const RESETS={
+  today:['Wyczyścić dzisiejszą historię?',()=>{ const h=store.get('hist',{}); delete h[today()]; store.set('hist',h); }],
+  hist:['Wyczyścić CAŁĄ historię?',()=>store.set('hist',{})],
+  score:['Wyzerować wszystkie punkty i serię?',setScore],
+  all:['Wyczyścić WSZYSTKO (historię, punkty, serię i zapisany wiersz)?',()=>{ store.set('hist',{}); setScore(); poem={title:'',author:'',text:''}; store.set('poem',poem);
+    ['pTitle','pAuthor','pText'].forEach(id=>$(id).value=''); $('poemPlay').style.display='none'; $('poemEdit').style.display='block'; }],
+};
+document.querySelectorAll('[data-reset]').forEach(b=>b.onclick=()=>{
+  if(!adminOk()) return;
+  const [q,fn]=RESETS[b.dataset.reset];
+  if(confirm(q)){ fn(); adminRender(); $('adminDone').textContent='✅ Zrobione'; }
+});
 </script>
 </body>
 </html>
