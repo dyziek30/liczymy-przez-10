@@ -68,12 +68,16 @@
   .levels{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
   .levels button{font:inherit;font-size:16px;padding:8px 12px;border-radius:12px;border:2px solid var(--accent);background:#fff;cursor:pointer}
   .levels button.on{background:var(--accent);color:#fff}
-  /* pomysły */
-  .ideas{list-style:none;padding:0;margin:0;text-align:left}
-  .ideas li{background:#fff;border-radius:14px;padding:12px 14px;margin:8px 0;box-shadow:0 3px 0 #0001;display:flex;gap:12px;align-items:flex-start;font-size:18px}
-  .ideas input{width:26px;height:26px;flex:none;margin-top:2px}
-  .ideas li.done{opacity:.55}
-  .tag{display:inline-block;font-size:13px;color:#fff;border-radius:8px;padding:1px 8px;margin-right:6px;vertical-align:middle}
+  /* historia */
+  .day{background:#fff;border-radius:18px;box-shadow:0 4px 0 #0001;padding:12px 14px;margin:10px 0;width:100%}
+  .day h3{margin:0 0 8px;font-size:20px}
+  .day details{border-top:1px solid #eee;padding:6px 0}
+  .day summary{cursor:pointer;font-size:18px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .day summary b{flex:1;min-width:150px}
+  .cOk{color:#1a8a80;font-weight:bold}.cErr{color:#e63946;font-weight:bold}
+  .day table{width:100%;border-collapse:collapse;font-size:16px;margin-top:6px}
+  .day th,.day td{text-align:left;padding:4px 6px;border-bottom:1px solid #f0f0f0}
+  .day td.n{text-align:center;width:52px}
 </style>
 </head>
 <body>
@@ -88,7 +92,7 @@
     <button class="tile" style="background:#2ec4b6" data-go="read"><b>📖</b><span>Czytam<br>i rozumiem</span></button>
     <button class="tile" style="background:#9b5de5" data-go="flash"><b>⚡</b><span>Szybkie<br>wyrazy</span></button>
     <button class="tile" style="background:#f15bb5" data-go="poem"><b>🎤</b><span>Trener<br>wiersza</span></button>
-    <button class="tile" style="background:#43aa8b" data-go="ideas"><b>💡</b><span>POMYSŁY<br>bez komputera</span></button>
+    <button class="tile" style="background:#43aa8b" data-go="hist"><b>📊</b><span>Historia<br>i statystyki</span></button>
   </div>
 </section>
 
@@ -203,12 +207,13 @@
   </div>
 </section>
 
-<!-- POMYSŁY -->
-<section class="view" id="v-ideas">
+<!-- HISTORIA -->
+<section class="view" id="v-hist">
   <button class="back" data-go="menu">← Menu</button>
-  <h2>💡 POMYSŁY – nauka bez komputera</h2>
-  <div class="hint">Zaznacz, co już robicie 👍</div>
-  <ul class="ideas" id="ideasList"></ul>
+  <h2>📊 Historia</h2>
+  <div class="hint">Każdy dzień: ile zadań zrobiła i ile razy dobrze albo z pomyłkami. Kliknij grę, żeby zobaczyć szczegóły.</div>
+  <div id="histList"></div>
+  <button class="big gray" id="histClear">🗑️ Wyczyść historię</button>
 </section>
 
 <script src="stories.js"></script>
@@ -224,12 +229,24 @@ const store = {
 const praise=['Brawo! 🎉','Super! 🌟','Świetnie! 👏','Ekstra! 🚀','Mistrzyni! 🏆'];
 const pick = a => a[rnd(0,a.length-1)];
 
+/* ---------- historia: zapis ---------- */
+const GAMES={math:'🧮 Matma przez 10',abc:'🔤 Ułóż alfabetycznie',read:'📖 Czytam i rozumiem',flash:'⚡ Szybkie wyrazy'};
+function today(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+// hist[dzień][gra][zadanie] = [dobrze, z pomyłkami]
+function rec(game,item,hadErr){
+  const hist=store.get('hist',{}), d=today();
+  const g=((hist[d]=hist[d]||{})[game]=hist[d][game]||{});
+  const r=g[item]=g[item]||[0,0]; r[hadErr?1:0]++;
+  store.set('hist',hist);
+}
+
 /* ---------- nawigacja ---------- */
 let view='menu';
 function go(v){
   view=v;
   document.querySelectorAll('.view').forEach(s=>s.classList.toggle('on',s.id==='v-'+v));
   if(v!=='poem') stopMic();
+  if(v==='hist') histRender();
   window.scrollTo(0,0);
 }
 document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>go(b.dataset.go));
@@ -241,7 +258,8 @@ function modeButtons(id,cb){
 }
 
 /* ---------- MATMA ---------- */
-let mode = 'add', pts = 0, streak = 0, task, slots, cur, input = '';
+let mode = 'add', pts = store.get('pts',0), streak = store.get('streak',0), task, slots, cur, input = '', mathErr = false;
+$('pts').textContent=pts; $('streak').textContent=streak; $('stars').textContent='⭐'.repeat(Math.min(streak,10));
 
 function makeTask(){
   const kind = mode==='mix' ? (Math.random()<.5?'add':'sub') : mode;
@@ -271,7 +289,7 @@ function render(){
       slots.push({el,...p}); s.appendChild(el);
     } else s.appendChild(document.createTextNode(p));
   });
-  drawDots(); setCur(0); $('next').style.display='none'; $('pad').style.display='grid';
+  mathErr=false; drawDots(); setCur(0); $('next').style.display='none'; $('pad').style.display='grid';
 }
 
 function drawDots(){
@@ -308,13 +326,14 @@ function check(){
     const nx=slots.findIndex(s=>!s.el.classList.contains('ok'));
     if(nx===-1) win(); else setCur(nx);
   } else {
-    q.el.classList.add('bad'); streak=0; $('streak').textContent=0;
+    q.el.classList.add('bad'); mathErr=true; streak=0; store.set('streak',0); $('streak').textContent=0; $('stars').textContent='';
     setTimeout(()=>{ q.el.textContent=''; input=''; },400);
   }
 }
 
 function win(){
-  pts++; streak++; $('pts').textContent=pts; $('streak').textContent=streak;
+  pts++; if(!mathErr) streak++; store.set('pts',pts); store.set('streak',streak); $('pts').textContent=pts; $('streak').textContent=streak;
+  rec('math', task.a+(task.kind==='add'?' + ':' − ')+task.b, mathErr);
   $('hint').textContent=pick(praise);
   $('stars').textContent='⭐'.repeat(Math.min(streak,10));
   $('pad').style.display='none'; $('next').style.display='inline-block';
@@ -351,7 +370,8 @@ const WORDS = {
   z:['zebra','zamek','zupa','zając'], ż:['żaba','żółw','żyrafa']
 };
 const plCmp = (a,b) => a.localeCompare(b,'pl');
-let abcMode='easy', abcPts=0, abcSorted=[], abcStep=0;
+let abcMode='easy', abcPts=store.get('abcPts',0), abcSorted=[], abcStep=0, abcErr=false;
+$('abcPts').textContent=abcPts;
 
 function abcNew(){
   let list;
@@ -361,7 +381,7 @@ function abcNew(){
     const big = Object.keys(WORDS).filter(l=>WORDS[l].length>=4);
     list = shuffle(WORDS[pick(big)]).slice(0,4);
   }
-  abcSorted = [...list].sort(plCmp); abcStep=0;
+  abcSorted = [...list].sort(plCmp); abcStep=0; abcErr=false;
   $('abcAnswer').innerHTML=''; $('abcHint').textContent=''; $('abcNext').style.display='none';
   const pool=$('abcPool'); pool.innerHTML='';
   shuffle(list).forEach(w=>{
@@ -377,9 +397,9 @@ function abcClick(b,w){
   if(w===want){
     b.remove(); const p=document.createElement('span'); p.className='word placed'; p.textContent=w;
     $('abcAnswer').appendChild(p); abcStep++; $('abcHint').textContent='';
-    if(abcStep===abcSorted.length){ abcPts++; $('abcPts').textContent=abcPts; $('abcHint').textContent=pick(praise); $('abcNext').style.display='inline-block'; }
+    if(abcStep===abcSorted.length){ abcPts++; store.set('abcPts',abcPts); $('abcPts').textContent=abcPts; rec('abc', abcSorted.join(', '), abcErr); $('abcHint').textContent=pick(praise); $('abcNext').style.display='inline-block'; }
   } else {
-    const i=diffIndex(w,want);
+    const i=diffIndex(w,want); abcErr=true;
     b.classList.add('bad'); setTimeout(()=>b.classList.remove('bad'),400);
     $('abcHint').innerHTML=`Porównaj litery: <b>${markWord(want,i)}</b> i <b>${markWord(w,i)}</b> – która jest wcześniej w alfabecie?`;
   }
@@ -389,10 +409,11 @@ modeButtons('abcModes',m=>{ abcMode=m; abcNew(); });
 abcNew();
 
 /* ---------- CZYTANIE ---------- */
-let readPts=0, readOrder=shuffle(STORIES.map((_,i)=>i)), readIdx=0;
+let readPts=store.get('readPts',0), readOrder=shuffle(STORIES.map((_,i)=>i)), readIdx=0;
 function readNew(){
   if(readIdx>=readOrder.length){ readOrder=shuffle(readOrder); readIdx=0; }
-  const s=STORIES[readOrder[readIdx++]];
+  const s=STORIES[readOrder[readIdx++]]; let readErr=false;
+  const title=s.t.split(' ').slice(0,5).join(' ')+'…';
   $('readText').textContent=s.t; $('readHint').textContent=''; $('readNext').style.display='none';
   const box=$('readQs'); box.innerHTML=''; let left=s.q.length;
   s.q.forEach(([q,good,...bad])=>{
@@ -403,8 +424,8 @@ function readNew(){
       b.onclick=()=>{
         if(done) return;
         if(a===good){ done=true; b.classList.add('good'); left--;
-          if(!left){ readPts++; $('readPts').textContent=readPts; $('readHint').textContent=pick(praise); $('readNext').style.display='inline-block'; } }
-        else { b.classList.add('bad'); $('readHint').textContent='Spójrz jeszcze raz do tekstu 🔍'; }
+          if(!left){ readPts++; store.set('readPts',readPts); $('readPts').textContent=readPts; rec('read', title, readErr); $('readHint').textContent=pick(praise); $('readNext').style.display='inline-block'; } }
+        else { b.classList.add('bad'); readErr=true; $('readHint').textContent='Spójrz jeszcze raz do tekstu 🔍'; }
       };
       o.appendChild(b);
     });
@@ -412,21 +433,23 @@ function readNew(){
   });
 }
 $('readNext').onclick=()=>{ readNew(); window.scrollTo(0,0); };
+$('readPts').textContent=readPts;
 readNew();
 
 /* ---------- SZYBKIE WYRAZY ---------- */
-let flashMode='short', flashPts=0, flashMs=2000, flashCur='', flashT;
+let flashMode='short', flashPts=store.get('flashPts',0), flashMs=2000, flashCur='', flashT, flashErr=false;
+$('flashPts').textContent=flashPts;
 function flashShow(){
   clearTimeout(flashT);
   $('flashWord').textContent=flashCur; $('flashGo').style.display='none'; $('flashJudge').style.display='none';
   flashT=setTimeout(()=>{ $('flashWord').textContent='❓'; $('flashJudge').style.display='block'; },flashMs);
 }
-function flashNew(){ let w; do{ w=pick(flashMode==='short'?SHORT:LONG);}while(w===flashCur); flashCur=w; flashShow(); }
+function flashNew(){ let w; do{ w=pick(flashMode==='short'?SHORT:LONG);}while(w===flashCur); flashCur=w; flashErr=false; flashShow(); }
 function flashUpd(){ $('flashMs').textContent=(flashMs/1000).toFixed(1); }
 $('flashGo').onclick=flashNew;
 $('flashAgain').onclick=flashShow;
-$('flashYes').onclick=()=>{ flashPts++; $('flashPts').textContent=flashPts; flashMs=Math.max(500,flashMs-150); flashUpd(); $('flashWord').textContent=pick(praise); $('flashJudge').style.display='none'; $('flashGo').style.display='inline-block'; };
-$('flashNo').onclick=()=>{ flashMs=Math.min(4000,flashMs+300); flashUpd(); flashShow(); };
+$('flashYes').onclick=()=>{ flashPts++; store.set('flashPts',flashPts); $('flashPts').textContent=flashPts; rec('flash', flashCur, flashErr); flashMs=Math.max(500,flashMs-150); flashUpd(); $('flashWord').textContent=pick(praise); $('flashJudge').style.display='none'; $('flashGo').style.display='inline-block'; };
+$('flashNo').onclick=()=>{ flashErr=true; flashMs=Math.min(4000,flashMs+300); flashUpd(); flashShow(); };
 modeButtons('flashModes',m=>{ flashMode=m; flashMs=m==='short'?2000:3000; flashUpd(); $('flashWord').textContent='👀'; $('flashJudge').style.display='none'; $('flashGo').style.display='inline-block'; });
 
 /* ---------- WIERSZ ---------- */
@@ -494,40 +517,29 @@ function stopMic(){
 }
 $('micBtn').onclick=()=>mic?stopMic():startMic();
 
-/* ---------- POMYSŁY ---------- */
-const TAGS={c:['Czytanie','#2ec4b6'],w:['Wiersz','#f15bb5'],a:['Alfabet','#4361ee'],m:['Matma','#ff7b00'],n:['Nauka','#9b5de5']};
-const IDEAS=[
-  ['c','Czytanie na zmianę – jedno zdanie Ty, jedno Emi. Mniej męczy, a dziecko słyszy, jak brzmi płynne czytanie.'],
-  ['c','10 minut czytania na głos codziennie – najlepiej o stałej porze, np. przed snem. Krótko, ale codziennie.'],
-  ['c','Po każdym rozdziale jedno pytanie: Kto? Gdzie? Co się stało? Co było najśmieszniejsze?'],
-  ['c','Czytanie z zakładką lub linijką pod wersem – oko nie gubi linijki, mniej błędów.'],
-  ['c','Karteczki z nazwami na przedmiotach w domu (DRZWI, LODÓWKA, LUSTRO) – czyta je mimochodem.'],
-  ['c','Lista zakupów – Emi czyta ją w sklepie i odhacza, co już jest w koszyku.'],
-  ['c','„Czytam pluszakom” – sadzamy maskotki i Emi czyta im bajkę jak pani w szkole.'],
-  ['w','Teatrzyk: recytacja wiersza przed „widownią” (pluszaki, dziadkowie przez wideorozmowę).'],
-  ['w','Nagraj recytację telefonem i odsłuchajcie razem – niech sama oceni, czy było głośno i wyraźnie.'],
-  ['w','Recytacja „przez pokój” – rodzic stoi na drugim końcu mieszkania, musi wszystko usłyszeć.'],
-  ['w','Zawsze zaczynamy jak prezenter: „Przedstawiam wiersz pt. … autor: …”.'],
-  ['w','Wiersz na raty – codziennie 2 nowe wersy + powtórka całości od początku.'],
-  ['w','Recytacja w ruchu – krok, podskok albo klaśnięcie na każdy wers (dla sportowej Emi!).'],
-  ['a','Układanie książek na półce alfabetycznie według tytułu albo autora.'],
-  ['a','Karteczki z imionami rodziny i kolegów – ułóż alfabetycznie na czas ze stoperem.'],
-  ['a','Gra „Pakuję walizkę”: A – arbuz, B – balon, C – cebula… każdy dodaje kolejną literę.'],
-  ['a','Szukanie słów w słowniku lub encyklopedii dla dzieci – świetny trening kolejności liter.'],
-  ['m','Matma w sklepie – policz, ile zapłacimy i ile będzie reszty (przez 10: 8 zł + 5 zł = 8 + 2 + 3).'],
-  ['m','Gra karciana „Dopełnij do 10” – zwykłe karty od 1 do 9, szukamy par dających razem 10.'],
-  ['m','Liczenie podskoków, rzutów do kosza, skakanki – po 10 robimy przerwę i liczymy dalej.'],
-  ['n','Domowe doświadczenie (kryształki soli, wulkan z sody) – Emi czyta instrukcję na głos krok po kroku.'],
-  ['n','Gry planszowe z dwiema kostkami (chińczyk, węże i drabiny) – dodawanie oczek bez liczenia na palcach.'],
-];
-const done=store.get('ideas',{});
-IDEAS.forEach(([t,txt],i)=>{
-  const li=document.createElement('li'); if(done[i]) li.classList.add('done');
-  const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=!!done[i];
-  cb.onchange=()=>{ done[i]=cb.checked; li.classList.toggle('done',cb.checked); store.set('ideas',done); };
-  const sp=document.createElement('div'); sp.innerHTML=`<span class="tag" style="background:${TAGS[t][1]}">${TAGS[t][0]}</span>${i+1}. ${txt}`;
-  li.append(cb,sp); $('ideasList').appendChild(li);
-});
+/* ---------- HISTORIA: widok ---------- */
+const esc = s => String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+function histRender(){
+  const hist=store.get('hist',{}), box=$('histList'); box.innerHTML='';
+  const days=Object.keys(hist).sort().reverse();
+  if(!days.length){ box.innerHTML='<div class="hint">Jeszcze nic tu nie ma – zagraj w którąś grę! 🙂</div>'; return; }
+  days.forEach(d=>{
+    const dt=new Date(d+'T12:00:00');
+    const label=(d===today()?'Dzisiaj, ':'')+dt.toLocaleDateString('pl-PL',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+    let html='<div class="day"><h3>📅 '+label+'</h3>';
+    Object.keys(GAMES).forEach(g=>{
+      const items=hist[d][g]; if(!items) return;
+      const rows=Object.entries(items).map(([k,[ok,er]])=>({k,ok,er,n:ok+er})).sort((a,b)=>b.er-a.er||b.n-a.n);
+      const ok=rows.reduce((s,r)=>s+r.ok,0), er=rows.reduce((s,r)=>s+r.er,0);
+      html+='<details><summary><b>'+GAMES[g]+'</b> <span>zadań: '+(ok+er)+'</span> <span class="cOk">✔ '+ok+'</span> <span class="cErr">✖ '+er+'</span></summary>'
+        +'<table><tr><th>Zadanie</th><th class="n">Razy</th><th class="n">✔</th><th class="n">✖</th></tr>'
+        +rows.map(r=>'<tr><td>'+esc(r.k)+'</td><td class="n">'+r.n+'</td><td class="n cOk">'+r.ok+'</td><td class="n cErr">'+(r.er||'')+'</td></tr>').join('')
+        +'</table></details>';
+    });
+    box.insertAdjacentHTML('beforeend',html+'</div>');
+  });
+}
+$('histClear').onclick=()=>{ if(confirm('Na pewno usunąć całą historię?')){ store.set('hist',{}); histRender(); } };
 </script>
 </body>
 </html>
